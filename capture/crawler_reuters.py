@@ -5,6 +5,7 @@ import requests
 
 from goose import Goose
 from bs4 import BeautifulSoup
+from downloader import compress_content, detect_language
 from logging.handlers import RotatingFileHandler
 
 
@@ -47,10 +48,17 @@ def find_articles(category):
     news_index = soup.find("div", {"class": "module"})
     urls = [a['href'] for a in news_index.findAll("a")]
     news_urls = ["http://br.reuters.com{0}".format(url) for url in urls]
-    print(news_urls)
     return news_urls
 
+def extract_title(article):
 
-#
-# if __name__ ==  "__main__":
-#     find_articles(u'mundo')
+    try:
+        title = article.title
+    except Exception as ex:
+        template = "An exception of type {0} occured during extraction of news title. Arguments:\n{1!r}"
+        message = template.format(type(ex).__name__, ex.args)
+        logger.exception(message)
+        return None
+    if title is None:
+        logger.error("The news title is None")
+    return title
