@@ -36,7 +36,7 @@ ARTICLES.ensure_index("source")
 CATEGORIES = {u'mundo': u'worldNews', u'negocios': u'businessNews', u'esportes': u'sportsNews', u'cultura': u'entertainmentNews',u'brasil': u'domesticNews', u'internet': u'internetNews'}
 
 
-def find_article(category):
+def find_articles(category):
 
     if category not in CATEGORIES:
         raise ValueError("Category value not accepted.")
@@ -47,7 +47,10 @@ def find_article(category):
     news_index = soup.find("div", {"class": "module"})
     urls = [a['href'] for a in news_index.findAll("a")]
     news_urls = ["http://br.reuters.com{0}".format(url) for url in urls]
+    print(news_urls)
     return news_urls
 
-if __name__ ==  "__main__":
-    find_article(u'mundo')
+
+#
+# if __name__ ==  "__main__":
+#     find_articles(u'mundo')
