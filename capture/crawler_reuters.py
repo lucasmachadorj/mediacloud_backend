@@ -83,3 +83,18 @@ def extract_published_time(soup):
     date_str = "{0} {1} {2} {3}".format(day, MONTHS[month], year, time)
     date = datetime.strptime(date_str, '%d %b %Y %H:%M')
     return date
+
+
+def extract_content(article):
+
+        try:
+            body_content = article.cleaned_text
+        except Exception as ex:
+            template = "An exception of type {0} occured during extraction of news\
+                        content. Arguments:\n{1!r}"
+            message = template.format(type(ex).__name__, ex.args)
+            logger.exception(message)
+            return None
+        if body_content is None:
+            logger.error("The news content is None")
+        return body_content
