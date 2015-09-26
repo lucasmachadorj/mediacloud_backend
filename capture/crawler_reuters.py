@@ -43,11 +43,11 @@ CATEGORIES = {u'mundo': u'worldNews', u'negocios': u'businessNews',
               u'brasil': u'domesticNews', u'internet': u'internetNews'}
 
 
-def find_articles(category):
+def find_articles(category, date):
 
     if category not in CATEGORIES:
         raise ValueError("Category value not accepted.")
-    INDEX_URL = "http://br.reuters.com/news/archive/{0}?date=today".format(CATEGORIES[category])
+    INDEX_URL = "http://br.reuters.com/news/archive/{0}?date={1}".format(CATEGORIES[category], date)
 
     index = requests.get(INDEX_URL).content
     soup = BeautifulSoup(index)
@@ -62,7 +62,8 @@ def extract_title(article):
     try:
         title = article.title
     except Exception as ex:
-        template = "An exception of type {0} occured during extraction of news title. Arguments:\n{1!r}"
+        template = "An exception of type {0} occured during extraction of news\
+                    title. Arguments:\n{1!r}"
         message = template.format(type(ex).__name__, ex.args)
         logger.exception(message)
         return None
@@ -98,3 +99,29 @@ def extract_content(article):
         if body_content is None:
             logger.error("The news content is None")
         return body_content
+
+
+def download_article(url):
+
+    article = {'link': url, 'source': 'crawler_reuters'}
+    logger.info("Downloading article: {0}".format(url))
+
+    try:
+        response = requests.get(url, timeout=30)
+    except Exception as ex:
+        logger.exception("Failed to fetch {0} due to exception {1}".format(url,
+                         type(ex).__name__))
+        return None
+
+    extractor = Goose({'use_meta_language': False, 'target_language': 'pt'})
+    news = extractor.extract(url=url)
+    soup = BeautifulSoup(response.content)
+
+    article['link_content'] = compress_content(response.text)
+    article['compressed'] = True
+    article['language'] = detect_language(response.text)
+    article['title'] = extract_title(news)
+    article['published_time'] = extract_published_time(soup)
+    article['body_content'] = extract_content(news)
+
+    return article
