@@ -1,7 +1,10 @@
+import re
 import logging
 import pymongo
 import settings
 import requests
+
+from datetime import datetime
 
 from goose import Goose
 from bs4 import BeautifulSoup
@@ -15,10 +18,11 @@ logger.setLevel(logging.DEBUG)
 stream_handler = logging.StreamHandler()
 stream_handler.setLevel(logging.DEBUG)
 file_handler = RotatingFileHandler('/tmp/mediacloud_reuters.log',
-                          maxBytes=5e6,
-                          backupCount=3)
+                                   maxBytes=5e6,
+                                   backupCount=3)
 
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter('%(asctime)s - %(name)s -\
+                              %(levelname)s - %(message)s')
 
 # add formatter to stream_handler
 stream_handler.setFormatter(formatter)
@@ -34,7 +38,9 @@ mcdb = client.MCDB
 ARTICLES = mcdb.articles
 ARTICLES.ensure_index("source")
 
-CATEGORIES = {u'mundo': u'worldNews', u'negocios': u'businessNews', u'esportes': u'sportsNews', u'cultura': u'entertainmentNews',u'brasil': u'domesticNews', u'internet': u'internetNews'}
+CATEGORIES = {u'mundo': u'worldNews', u'negocios': u'businessNews',
+              u'esportes': u'sportsNews', u'cultura': u'entertainmentNews',
+              u'brasil': u'domesticNews', u'internet': u'internetNews'}
 
 
 def find_articles(category):
@@ -50,6 +56,7 @@ def find_articles(category):
     news_urls = ["http://br.reuters.com{0}".format(url) for url in urls]
     return news_urls
 
+
 def extract_title(article):
 
     try:
@@ -62,3 +69,17 @@ def extract_title(article):
     if title is None:
         logger.error("The news title is None")
     return title
+
+
+def extract_published_time(soup):
+    MONTHS = {u"janeiro": u"Jan", u"fevereiro": u"Fev", u"mar\xe7o": u"Mar",
+              u"abril": u"Apr", u"maio": u"May", u"junho": u"Jun", u"julho":
+              u"Jul", u"agosto": u"Aug", u"setembro": u"Sep", u"outubro":
+              u"Oct", u"novembro": u"Nov", u"dezembro": u"Dec"}
+    time_tag = soup.find("div", {"class": "timestampHeader"}).text
+    time_pattern = re.compile("(.*), (\d{1,2}) de (.*) de (\d{4}) (.*) BRT")
+    groups = time_pattern.search(time_tag).groups()
+    day, month, year, time = [groups[i] for i in range(1, 5)]
+    date_str = "{0} {1} {2} {3}".format(day, MONTHS[month], year, time)
+    date = datetime.strptime(date_str, '%d %b %Y %H:%M')
+    return date
