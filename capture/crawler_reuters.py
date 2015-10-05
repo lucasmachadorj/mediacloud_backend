@@ -3,14 +3,17 @@ import logging
 import pymongo
 import settings
 import requests
-
+import urllib
+import zlib
+import bson
+import pickle as CP
 from datetime import datetime
 
 from goose import Goose
 from bs4 import BeautifulSoup
-from downloader import compress_content, detect_language
 from logging.handlers import RotatingFileHandler
 
+from urllib import parse
 
 logger = logging.getLogger("Reuters")
 logger.setLevel(logging.DEBUG)
@@ -56,6 +59,16 @@ def find_articles(category, date):
     news_urls = ["http://br.reuters.com{0}".format(url) for url in urls]
     return news_urls
 
+def compress_content(html):
+    """
+    Compresses and encodes html content so that it can be BSON encoded an store in mongodb
+    :param html: original html document
+    :return: compressed an b64 encoded document
+    """
+    pickled = CP.dumps(html, CP.HIGHEST_PROTOCOL)
+    squished = zlib.compress(pickled)
+    encoded = bson.Binary(squished)  # b64.urlsafe_b64encode(squished)
+    return encoded
 
 def extract_title(article):
 
@@ -98,6 +111,9 @@ def extract_content(article):
             return None
         if body_content is None:
             logger.error("The news content is None")
+
+        last_word = body_content.strip().split().pop().lower()
+
         return body_content
 
 
@@ -119,9 +135,14 @@ def download_article(url):
 
     article['link_content'] = compress_content(response.text)
     article['compressed'] = True
-    article['language'] = detect_language(response.text)
-    article['title'] = extract_title(news)
+    title = extract_title(news)
+    article['title'] = parse.unquote_plus(title)
     article['published_time'] = extract_published_time(soup)
     article['body_content'] = extract_content(news)
 
     return article
+
+if __name__ == '__main__':
+    for url in find_articles('negocios', '10022015'):
+        article = download_article(url)
+        print(article['body_content'])
