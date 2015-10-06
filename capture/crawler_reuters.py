@@ -112,8 +112,6 @@ def extract_content(article):
         if body_content is None:
             logger.error("The news content is None")
 
-        last_word = body_content.strip().split().pop().lower()
-
         return body_content
 
 
@@ -143,6 +141,10 @@ def download_article(url):
     return article
 
 if __name__ == '__main__':
-    for url in find_articles('negocios', '10022015'):
-        article = download_article(url)
-        print(article['body_content'])
+    for url in find_articles('negocios', 'today'):
+        exists = list(ARTICLES.find({"link": url}))
+        if not exists:
+            article = download_article(url)
+            if article['body_content'] is None:
+                continue
+            ARTICLES.insert(article, w=1)
