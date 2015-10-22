@@ -21,4 +21,5 @@ sphinxit
 goose-extractor
 elasticsearch
 urllib3
+Pillow
 -e git@github.com:lucasmachadorj/python-goose.git
