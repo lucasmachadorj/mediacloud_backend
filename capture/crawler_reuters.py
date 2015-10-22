@@ -91,12 +91,14 @@ def extract_published_time(soup):
               u"Jul", u"agosto": u"Aug", u"setembro": u"Sep", u"outubro":
               u"Oct", u"novembro": u"Nov", u"dezembro": u"Dec"}
     time_tag = soup.find("div", {"class": "timestampHeader"}).text
-    time_pattern = re.compile("(.*), (\d{1,2}) de (.*) de (\d{4}) (.*) BRT")
-    groups = time_pattern.search(time_tag).groups()
-    day, month, year, time = [groups[i] for i in range(1, 5)]
-    date_str = "{0} {1} {2} {3}".format(day, MONTHS[month], year, time)
-    date = datetime.strptime(date_str, '%d %b %Y %H:%M')
-    return date
+    time_pattern = re.compile("(.*), (\d{1,2}) de (.*) de (\d{4}) (.*) BR(S)?T")
+    if time_tag is not None:
+        groups = time_pattern.search(time_tag).groups()
+        day, month, year, time = [groups[i] for i in range(1, 5)]
+        date_str = "{0} {1} {2} {3}".format(day, MONTHS[month], year, time)
+        date = datetime.strptime(date_str, '%d %b %Y %H:%M')
+        return date
+    return None
 
 
 def extract_content(article):
